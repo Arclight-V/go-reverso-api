@@ -8,7 +8,7 @@ import (
 func main() {
 	client := client.NewClient()
 	langs := languages.GetLanguages()
-
+	engl := langs["englis"]
 	res, err := client.Translate("Hello", langs["english"], langs["russian"])
 	res1, err := client.Synonyms("Hello", langs["english"])
 	res2, err := client.AutoComplete("Hello", langs["english"])
