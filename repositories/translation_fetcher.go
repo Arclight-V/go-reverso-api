@@ -9,4 +9,5 @@ import (
 type TranslationFetcher interface {
 	FetchTranslations(term, partOfSpeech string, srcLang, dstLang *languages.Language) ([]string, error)
 	FetchTranscription(term string, srcLang, dstLang entities.Language) (string, error)
+	FetchAdditionalData(word *entities.Word) error
 }

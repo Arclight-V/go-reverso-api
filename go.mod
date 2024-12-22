@@ -6,6 +6,7 @@ toolchain go1.23.3
 
 require (
 	github.com/gocolly/colly v1.2.0
+	github.com/serope/laroussefr v0.0.0-00010101000000-000000000000
 	github.com/sirupsen/logrus v1.9.3
 )
 
@@ -21,9 +22,12 @@ require (
 	github.com/kennygrant/sanitize v1.2.4 // indirect
 	github.com/saintfish/chardet v0.0.0-20230101081208-5e3ef4b5456d // indirect
 	github.com/temoto/robotstxt v1.1.2 // indirect
+	github.com/yhat/scrape v0.0.0-20161128144610-24b7890b0945 // indirect
 	golang.org/x/net v0.33.0 // indirect
 	golang.org/x/sys v0.28.0 // indirect
 	golang.org/x/text v0.21.0 // indirect
 	google.golang.org/appengine v1.6.8 // indirect
 	google.golang.org/protobuf v1.26.0 // indirect
 )
+
+replace github.com/serope/laroussefr => github.com/Arclight-V/laroussefr v0.0.0-20241222153843-0fa3f577b3b1

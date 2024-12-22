@@ -13,6 +13,7 @@ type Translations = map[Language][]string
 type Word struct {
 	Language      Language
 	Term          string
+	TermAlt       string
 	PartOfSpeech  string
 	Transcription string
 	Translations  Translations

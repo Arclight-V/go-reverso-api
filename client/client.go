@@ -237,26 +237,28 @@ func (c *Client) Speak(fileName, filePath, text string, mp3BitRate, voiceSpeed i
 }
 
 func (c *Client) FetchTranslations(term, partOfSpeech string, srcLang, dstLang *languages.Language) ([]string, error) {
-	res, err := c.Context(term, srcLang, dstLang, 1)
+	res, err := c.Translate(term, srcLang, dstLang)
 	if err != nil {
 		return nil, err
 	}
-	log.Println(res)
 	var translations []string
 	// TODO :: Transfer it to args as it can be used to determine the level of understanding of the language
-	//i := 0
-	//for _, result := range res.ContextResults.Results {
-	//	if strings.Contains(result.PartOfSpeech, partOfSpeech) {
-	//		if i >= 1 {
-	//			break
-	//		}
-	//		translations = append(translations, result.Translation)
-	//		i++
-	//	}
-	//}
+	i := 0
+	for _, result := range res.ContextResults.Results {
+		if strings.Contains(result.PartOfSpeech, partOfSpeech) {
+			if i >= 1 {
+				break
+			}
+			translations = append(translations, result.Translation)
+			i++
+		}
+	}
 	return translations, nil
 }
 
 func (c *Client) FetchTranscription(term string, srcLang, dstLang entities.Language) (string, error) {
 	return "", nil
+}
+func (c *Client) FetchAdditionalData(word *entities.Word) error {
+	return nil
 }

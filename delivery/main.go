@@ -63,29 +63,33 @@ func main() {
 	// Initialize clients
 	reversoContextClient := client.NewClient()
 	dictionaryCambridgeParser := repositories.NewDictionaryCambridgeParser()
+	larousseScarper := repositories.NewLarousseScarping()
 
 	// Register parsers in the service
 	translationService := usecases.NewTranslationService([]repositories.TranslationFetcher{
 		reversoContextClient,
 		dictionaryCambridgeParser,
+		larousseScarper,
 	})
 
 	langs := languages.GetLanguages()
 	// Display the translated words
 	for _, word := range translatedWords {
+		larousseScarper.FetchAdditionalData(&word)
 		if word.Language == entities.French {
 			// For three-way cards
 			//err = translationService.GetTranslations(&word, langs[string(entities.French)], langs[string(entities.English)])
-			err = translationService.GetTranscriptions(&word, word.Language, entities.English)
-			if err != nil {
-				log.Errorf("Error GetTranscriptions", err)
-				continue
-			}
+			//err = translationService.GetTranscriptions(&word, word.Language, entities.English)
+			//if err != nil {
+			//	log.Errorf("Error GetTranscriptions", err)
+			//	continue
+			//}
 			err = translationService.GetTranslations(&word, langs[string(entities.French)], langs[string(entities.Russian)])
 			if err != nil {
 				log.Errorf("Error GetTranslations", err)
 				continue
 			}
+
 		} else {
 			// For three-way cards
 			//err = translationService.GetTranslations(&word, langs[string(entities.English)], langs[string(entities.French)])

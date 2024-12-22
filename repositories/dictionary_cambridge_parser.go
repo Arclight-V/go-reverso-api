@@ -126,5 +126,8 @@ func (p *DictionaryCambridgeParser) FetchTranscription(term string, srcLang, dst
 	}
 	transcription, err := fetchTranscription(term, srcLang, dstLang)
 	return transcription, err
+}
 
+func (p *DictionaryCambridgeParser) FetchAdditionalData(word *entities.Word) error {
+	return nil
 }
