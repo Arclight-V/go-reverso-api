@@ -38,6 +38,7 @@ func (p *LarousseScarping) FetchAdditionalData(word *entities.Word) error {
 		if result.Words[0].Header.Phonetic != "" {
 			word.Transcription = result.Words[0].Header.Phonetic
 		}
+		word.Type = result.Words[0].Header.Type
 	}
 
 	return nil

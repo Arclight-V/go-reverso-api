@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"github.com/atselvan/ankiconnect"
 	"github.com/marycka9/go-reverso-api/client"
 	"github.com/marycka9/go-reverso-api/entities"
@@ -11,6 +12,23 @@ import (
 	log "github.com/sirupsen/logrus"
 	"strings"
 )
+
+//func InsertSpaceBeforeSymbol(s string, target rune) string {
+//	runes := []rune(s)
+//	var result []rune
+//
+//	for i, r := range runes {
+//		if r == target {
+//			// Проверяем, не является ли предыдущий символ пробелом
+//			if i > 0 && runes[i-1] != ' ' {
+//				result = append(result, ' ')
+//			}
+//		}
+//		result = append(result, r)
+//	}
+//
+//	return string(result)
+//}
 
 func main() {
 	logger := log.New()
@@ -117,18 +135,32 @@ func main() {
 					log.Error(restErr)
 				}
 			}
-			//note := ankiconnect.Note{
-			//	DeckName:  "Francais_mots",
-			//	ModelName: "Basic (and reversed card)",
-			//	Fields: ankiconnect.Fields{
-			//		"Front": strings.Join([]string{word.Term + word.TermAlt, word.Transcription, word.PartOfSpeech}, "<br>"),
-			//		"Back":  strings.Join(word.Translations["ru"], "<br>"),
-			//	},
-			//}
-			//restErr := ankiClient.Notes.Add(note)
-			//if restErr != nil {
-			//	log.Error(restErr)
-			//}
+			if strings.IndexRune(word.Transcription, ',') != -1 && word.TermAlt == "" {
+				note := ankiconnect.Note{
+					DeckName:  "Francais_mots_corriger",
+					ModelName: "Basic (and reversed card french)",
+					Fields: ankiconnect.Fields{
+						"Front": strings.Join([]string{fmt.Sprintf("%s %s", word.Term, "ERROR"), word.Transcription, word.Type}, "<br>"),
+						"Back":  strings.Join(word.Translations["ru"], "<br>"),
+					},
+				}
+				restErr := ankiClient.Notes.Add(note)
+				if restErr != nil {
+					log.Error(restErr)
+				}
+			}
+			note := ankiconnect.Note{
+				DeckName:  "Francais_mots",
+				ModelName: "Basic (and reversed card french)",
+				Fields: ankiconnect.Fields{
+					"Front": strings.Join([]string{fmt.Sprintf("%s %s", word.Term, word.TermAlt), word.Transcription, word.Type}, "<br>"),
+					"Back":  strings.Join(word.Translations["ru"], "<br>"),
+				},
+			}
+			restErr := ankiClient.Notes.Add(note)
+			if restErr != nil {
+				log.Error(restErr)
+			}
 
 		} else {
 			// For three-way cards

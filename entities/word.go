@@ -17,6 +17,8 @@ type Word struct {
 	PartOfSpeech  string
 	Transcription string
 	Translations  Translations
+	// TODO:: merge with PartOfSpeech
+	Type string
 }
 
 // Conjugation for verb, before adding new tenses, create a type
