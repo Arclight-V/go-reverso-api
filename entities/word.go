@@ -18,3 +18,10 @@ type Word struct {
 	Transcription string
 	Translations  Translations
 }
+
+// Conjugation for verb, before adding new tenses, create a type
+type FrenchVerbConjugation struct {
+	Infinitif string
+	Indicatif map[string][]string
+	Imperatif map[string][]string
+}

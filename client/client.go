@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/PuerkitoBio/goquery"
 	"github.com/marycka9/go-reverso-api/entities"
 	"github.com/marycka9/go-reverso-api/languages"
 	"github.com/marycka9/go-reverso-api/voices"
@@ -261,4 +262,151 @@ func (c *Client) FetchTranscription(term string, srcLang, dstLang entities.Langu
 }
 func (c *Client) FetchAdditionalData(word *entities.Word) error {
 	return nil
+}
+
+func (c *Client) FetchConjugation(term string, lang entities.Language) (*entities.FrenchVerbConjugation, error) {
+	// Проверка языка (допустим, только французский поддерживается)
+	if lang != "french" {
+		return nil, fmt.Errorf("язык %s не поддерживается для спряжения", lang)
+	}
+
+	// Формируем URL, заменяя "aller" на нужный глагол.
+	url := fmt.Sprintf("https://conjugator.reverso.net/conjugation-french-verb-%s.html", strings.ToLower(term))
+
+	// Создаём новый HTTP-запрос.
+	req, err := http.NewRequest(http.MethodGet, url, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	// Устанавливаем необходимые заголовки.
+	req.Header.Add("User-Agent", entities.UserAgentContextBrowser)
+	req.Header.Add("Accept-Language", "en-US,en;q=0.9,fr;q=0.8")
+
+	// Выполняем запрос.
+	resp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	// Проверяем статус ответа.
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("не удалось получить спряжение: статус код %d", resp.StatusCode)
+	}
+
+	// Парсим HTML-ответ с помощью goquery.
+	doc, err := goquery.NewDocumentFromReader(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	// Создаём структуру для хранения спряжения.
+	conjugation := &entities.FrenchVerbConjugation{
+		Infinitif: term,
+		Indicatif: make(map[string][]string),
+		Imperatif: make(map[string][]string),
+	}
+
+	// Извлекаем Infinitif
+	doc.Find(".word-wrap-row").Each(func(i int, s *goquery.Selection) {
+		title := s.Find(".word-wrap-title h4").Text()
+		if strings.TrimSpace(title) == "Infinitif" {
+			s.Find(".blue-box-wrap.alt-tense ul.wrap-verbs-listing li").Each(func(j int, li *goquery.Selection) {
+				verbForm := strings.TrimSpace(li.Find("i.verbtxt").Text())
+				if verbForm != "" {
+					conjugation.Infinitif = verbForm
+				}
+			})
+		}
+	})
+
+	// Извлекаем Indicatif
+	doc.Find(".result-block-api").Find(".word-wrap-row").Each(func(i int, s *goquery.Selection) {
+		// Проверяем, является ли раздел "Indicatif"
+		sectionTitle := s.Find(".word-wrap-title h4").Text()
+		if strings.TrimSpace(sectionTitle) == "Indicatif" {
+			// Для каждой колонки спряжения внутри Indicatif
+			s.Find(".wrap-three-col .blue-box-wrap").Each(func(j int, box *goquery.Selection) {
+				// Извлекаем время (например, Présent, Imparfait)
+				tense := strings.TrimSpace(box.Find("p").First().Text())
+				if tense == "" {
+					return
+				}
+
+				// Извлекаем формы спряжения
+				forms := []string{}
+				box.Find("ul.wrap-verbs-listing li").Each(func(k int, li *goquery.Selection) {
+					// Извлекаем форму глагола из элемента с классом "verbtxt"
+					form := strings.TrimSpace(li.Find("i.verbtxt").Text())
+					if form == "" {
+						// В некоторых случаях может потребоваться объединение с дополнительными частями
+						// Например, для Passé composé: "suis allé"
+						// Здесь можно адаптировать парсинг при необходимости
+						// Например:
+						aux := strings.TrimSpace(li.Find("i.auxgraytxt").Text())
+						if aux != "" {
+							form = aux + " " + form
+						}
+					}
+					if form != "" {
+						forms = append(forms, form)
+					}
+				})
+
+				if len(forms) > 0 {
+					conjugation.Indicatif[tense] = forms
+				}
+			})
+		}
+	})
+
+	// Поиск всех секций с классом "word-wrap-row"
+	doc.Find(".word-wrap-row").Each(func(i int, s *goquery.Selection) {
+		// Поиск заголовка внутри "word-wrap-title"
+		title := s.Find(".word-wrap-title h4").Text()
+		if strings.TrimSpace(title) == "ImpératifInfinitif" {
+			// Внутри секции "Impératif" ищем все "blue-box-wrap"
+			s.Find(".wrap-three-col .blue-box-wrap").Each(func(j int, box *goquery.Selection) {
+				// Извлекаем время из тега <p>
+				tense := strings.TrimSpace(box.Find("p").Text())
+				if tense == "" {
+					return // Пропускаем, если время не найдено
+				}
+
+				// Инициализируем срез для хранения форм
+				var forms []string
+
+				// Проходимся по каждому <li> внутри <ul>
+				box.Find("ul.wrap-verbs-listing li").Each(func(k int, li *goquery.Selection) {
+					// Для "Impératif Passé" формы содержат вспомогательный глагол
+					aux := strings.TrimSpace(li.Find("i.auxgraytxt").Text())
+					verb := strings.TrimSpace(li.Find("i.verbtxt").Text())
+
+					if aux != "" {
+						// Если есть вспомогательный глагол, объединяем его с основной формой
+						forms = append(forms, fmt.Sprintf("%s%s", aux, verb))
+					} else {
+						// Иначе добавляем только основную форму
+						forms = append(forms, verb)
+					}
+				})
+
+				// Добавляем извлеченные данные в структуру
+				if len(forms) > 0 {
+					if _, ok := conjugation.Imperatif[tense]; !ok {
+						conjugation.Imperatif[tense] = forms
+					}
+
+				}
+			})
+		}
+	})
+
+	// Проверяем, заполнено ли спряжение
+	if len(conjugation.Indicatif) == 0 && conjugation.Infinitif == "" {
+		return nil, fmt.Errorf("не удалось извлечь спряжение для глагола %s", term)
+	}
+
+	return conjugation, nil
 }

@@ -34,6 +34,7 @@ func GetPartOfSpeechParserInstance() *PartOfSpeechParser {
 				"pron":         "pron",
 				"preposition":  "prep",
 				"prep":         "prep",
+				"préposition":  "prep",
 				"interjection": "interj",
 				"interj":       "interj",
 				"article":      "art",

@@ -131,3 +131,7 @@ func (p *DictionaryCambridgeParser) FetchTranscription(term string, srcLang, dst
 func (p *DictionaryCambridgeParser) FetchAdditionalData(word *entities.Word) error {
 	return nil
 }
+
+func (p *DictionaryCambridgeParser) FetchConjugation(term string, lang entities.Language) (*entities.FrenchVerbConjugation, error) {
+	return nil, nil
+}

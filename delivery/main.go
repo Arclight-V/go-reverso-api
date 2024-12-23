@@ -2,12 +2,14 @@ package main
 
 import (
 	"flag"
+	"github.com/atselvan/ankiconnect"
 	"github.com/marycka9/go-reverso-api/client"
 	"github.com/marycka9/go-reverso-api/entities"
 	"github.com/marycka9/go-reverso-api/languages"
 	"github.com/marycka9/go-reverso-api/repositories"
 	"github.com/marycka9/go-reverso-api/usecases"
 	log "github.com/sirupsen/logrus"
+	"strings"
 )
 
 func main() {
@@ -75,7 +77,6 @@ func main() {
 	langs := languages.GetLanguages()
 	// Display the translated words
 	for _, word := range translatedWords {
-		larousseScarper.FetchAdditionalData(&word)
 		if word.Language == entities.French {
 			// For three-way cards
 			//err = translationService.GetTranslations(&word, langs[string(entities.French)], langs[string(entities.English)])
@@ -84,11 +85,50 @@ func main() {
 			//	log.Errorf("Error GetTranscriptions", err)
 			//	continue
 			//}
+			err = larousseScarper.FetchAdditionalData(&word)
+			if err != nil {
+				log.Errorf("Error FetchAdditionalData", err)
+				continue
+			}
 			err = translationService.GetTranslations(&word, langs[string(entities.French)], langs[string(entities.Russian)])
 			if err != nil {
 				log.Errorf("Error GetTranslations", err)
 				continue
 			}
+			ankiClient := ankiconnect.NewClient()
+			if word.PartOfSpeech == "v" {
+				verb, err := reversoContextClient.FetchConjugation(word.Term, word.Language)
+				if err != nil {
+					log.Errorf("Error FetchConjugation", err)
+					continue
+				}
+				log.Infof("Conjugation: %s", verb)
+				note := ankiconnect.Note{
+					DeckName:  "Francais_conjugation",
+					ModelName: "Basic (de conjugaison A1)",
+					Fields: ankiconnect.Fields{
+						"Infinitif": verb.Infinitif,
+						"Présent":   strings.Join(verb.Indicatif["Présent"], "<br>"),
+						"Impératif": strings.Join(verb.Imperatif["Présent"], "<br>"),
+					},
+				}
+				restErr := ankiClient.Notes.Add(note)
+				if restErr != nil {
+					log.Error(restErr)
+				}
+			}
+			//note := ankiconnect.Note{
+			//	DeckName:  "Francais_mots",
+			//	ModelName: "Basic (and reversed card)",
+			//	Fields: ankiconnect.Fields{
+			//		"Front": strings.Join([]string{word.Term + word.TermAlt, word.Transcription, word.PartOfSpeech}, "<br>"),
+			//		"Back":  strings.Join(word.Translations["ru"], "<br>"),
+			//	},
+			//}
+			//restErr := ankiClient.Notes.Add(note)
+			//if restErr != nil {
+			//	log.Error(restErr)
+			//}
 
 		} else {
 			// For three-way cards
@@ -107,7 +147,7 @@ func main() {
 				continue
 			}
 		}
-		logger.Infof("[%s] %s (%s) %s\n", word.Language, word.Term, word.PartOfSpeech, word.Transcription)
+		logger.Infof("[%s] %s %s (%s) %s\n", word.Language, word.Term, word.TermAlt, word.PartOfSpeech, word.Transcription)
 		for k, v := range word.Translations {
 			log.Infof(" [%s] (%s)\n", k, v)
 		}
