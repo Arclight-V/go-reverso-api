@@ -13,23 +13,6 @@ import (
 	"strings"
 )
 
-//func InsertSpaceBeforeSymbol(s string, target rune) string {
-//	runes := []rune(s)
-//	var result []rune
-//
-//	for i, r := range runes {
-//		if r == target {
-//			// Проверяем, не является ли предыдущий символ пробелом
-//			if i > 0 && runes[i-1] != ' ' {
-//				result = append(result, ' ')
-//			}
-//		}
-//		result = append(result, r)
-//	}
-//
-//	return string(result)
-//}
-
 func main() {
 	logger := log.New()
 
@@ -86,38 +69,29 @@ func main() {
 	larousseScarper := repositories.NewLarousseScarping()
 
 	// Register parsers in the service
-	translationService := usecases.NewTranslationService([]repositories.TranslationFetcher{
-		reversoContextClient,
-		dictionaryCambridgeParser,
-		larousseScarper,
+	translationService := usecases.NewTranslationService(map[usecases.TranslationServiceType]repositories.TranslationFetcher{
+		usecases.REVERSO:   reversoContextClient,
+		usecases.CAMBRIDGE: dictionaryCambridgeParser,
+		usecases.LAROUSSE:  larousseScarper,
 	})
 
 	langs := languages.GetLanguages()
 	// Display the translated words
 	for _, word := range translatedWords {
 		if word.Language == entities.French {
-			// For three-way cards
-			//err = translationService.GetTranslations(&word, langs[string(entities.French)], langs[string(entities.English)])
-			//err = translationService.GetTranscriptions(&word, word.Language, entities.English)
-			//if err != nil {
-			//	log.Errorf("Error GetTranscriptions", err)
-			//	continue
-			//}
-			err = larousseScarper.FetchAdditionalData(&word)
-			if err != nil {
-				log.Errorf("Error FetchAdditionalData", err)
+			if err := translationService.GetAdditionalData(usecases.LAROUSSE, &word); err != nil {
+				log.Error("Error FetchAdditionalData", err)
 				continue
 			}
-			err = translationService.GetTranslations(&word, langs[string(entities.French)], langs[string(entities.Russian)])
-			if err != nil {
-				log.Errorf("Error GetTranslations", err)
+			if err := translationService.GetTranslations(usecases.REVERSO, &word, langs[string(entities.French)], langs[string(entities.Russian)]); err != nil {
+				log.Error("Error GetTranslations", err)
 				continue
 			}
 			ankiClient := ankiconnect.NewClient()
 			if word.PartOfSpeech == "v" {
 				verb, err := reversoContextClient.FetchConjugation(word.Term, word.Language)
 				if err != nil {
-					log.Errorf("Error FetchConjugation", err)
+					log.Error("Error FetchConjugation", err)
 					continue
 				}
 				log.Infof("Conjugation: %s", verb)
@@ -169,11 +143,11 @@ func main() {
 			//	log.Errorf("Error GetTranslations", err)
 			//	continue
 			//}
-			err = translationService.GetTranscriptions(&word, word.Language, entities.Russian)
+			err = translationService.GetTranscriptions(usecases.REVERSO, &word, word.Language, entities.Russian)
 			if err != nil {
 				log.Errorf("Error GetTranscriptions", err)
 			}
-			err = translationService.GetTranslations(&word, langs[string(entities.English)], langs[string(entities.Russian)])
+			err = translationService.GetTranslations(usecases.REVERSO, &word, langs[string(entities.English)], langs[string(entities.Russian)])
 			if err != nil {
 				log.Errorf("Error GetTranslations", err)
 				continue
