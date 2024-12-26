@@ -137,21 +137,43 @@ func main() {
 			}
 
 		} else {
-			// For three-way cards
-			//err = translationService.GetTranslations(&word, langs[string(entities.English)], langs[string(entities.French)])
-			//if err != nil {
-			//	log.Errorf("Error GetTranslations", err)
-			//	continue
-			//}
-			err = translationService.GetTranscriptions(usecases.REVERSO, &word, word.Language, entities.Russian)
-			if err != nil {
-				log.Errorf("Error GetTranscriptions", err)
-			}
-			err = translationService.GetTranslations(usecases.REVERSO, &word, langs[string(entities.English)], langs[string(entities.Russian)])
-			if err != nil {
-				log.Errorf("Error GetTranslations", err)
+			if err := translationService.GetTranslations(usecases.REVERSO, &word, langs[string(entities.English)], langs[string(entities.Russian)]); err != nil {
+				log.Error("Error GetTranslations", err)
 				continue
 			}
+			ankiClient := ankiconnect.NewClient()
+			if word.PartOfSpeech == "v" {
+				// TODO: implement the addition of verb conjugation
+				log.Infof("implement the addition of verb conjugation")
+			}
+			if strings.IndexRune(word.Transcription, ',') != -1 && word.TermAlt == "" {
+				note := ankiconnect.Note{
+					DeckName:  "English_words_need_work",
+					ModelName: "Basic (and reversed card french)",
+					Fields: ankiconnect.Fields{
+						"Front": strings.Join([]string{fmt.Sprintf("%s %s", word.Term, "ERROR"), word.Transcription, word.Type}, "<br>"),
+						"Back":  strings.Join(word.Translations["ru"], "<br>"),
+					},
+				}
+				restErr := ankiClient.Notes.Add(note)
+				if restErr != nil {
+					log.Error(restErr)
+				}
+			}
+			note := ankiconnect.Note{
+				DeckName:  "English_words",
+				ModelName: "Basic (and reversed card french)",
+				// TODO: convert word.type and word.PartOfSpeech to the same variable
+				Fields: ankiconnect.Fields{
+					"Front": strings.Join([]string{fmt.Sprintf("%s %s", word.Term, word.TermAlt), word.Transcription, word.PartOfSpeech}, "<br>"),
+					"Back":  strings.Join(word.Translations["ru"], "<br>"),
+				},
+			}
+			restErr := ankiClient.Notes.Add(note)
+			if restErr != nil {
+				log.Error(restErr)
+			}
+
 		}
 		logger.Infof("[%s] %s %s (%s) %s\n", word.Language, word.Term, word.TermAlt, word.PartOfSpeech, word.Transcription)
 		for k, v := range word.Translations {
