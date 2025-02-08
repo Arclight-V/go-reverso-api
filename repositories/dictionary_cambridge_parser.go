@@ -88,7 +88,6 @@ func fetchTranscription(term string, srcLang, dstLang entities.Language) (string
 	builder.WriteString(term)
 
 	err := c.Visit(builder.String())
-
 	return transcription, err
 
 }

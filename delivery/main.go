@@ -145,6 +145,7 @@ func main() {
 			if word.PartOfSpeech == "v" {
 				// TODO: implement the addition of verb conjugation
 				log.Infof("implement the addition of verb conjugation")
+				//reversoContextClient.FetchConjugation()
 			}
 			if strings.IndexRune(word.Transcription, ',') != -1 && word.TermAlt == "" {
 				note := ankiconnect.Note{
