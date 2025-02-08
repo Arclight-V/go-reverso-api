@@ -5,6 +5,9 @@ import (
 	"fmt"
 	"github.com/atselvan/ankiconnect"
 	"github.com/marycka9/go-reverso-api/client"
+	"github.com/marycka9/go-reverso-api/common"
+	"github.com/marycka9/go-reverso-api/config"
+	"github.com/marycka9/go-reverso-api/engine"
 	"github.com/marycka9/go-reverso-api/entities"
 	"github.com/marycka9/go-reverso-api/languages"
 	"github.com/marycka9/go-reverso-api/repositories"
@@ -15,6 +18,12 @@ import (
 
 func main() {
 	logger := log.New()
+
+	var settings engine.Settings
+
+	//Core settings
+	flag.StringVar(&settings.ConfigFile, "config", config.DefaultFilePath(), "config file to load")
+	flag.StringVar(&settings.DataDir, "datadir", common.GetDefaultDataDir(), "default data directory for go-reverso-api files")
 
 	// Flags for CSV file paths
 	frenchFilePath := flag.String("french", "", "Path to the French CSV file")
